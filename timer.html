@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQE2 Station Timer | Uprising Test Prep</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#182031; --panel2:#1f293d; --line:#2c3850;
+    --ink:#eef2f8; --muted:#93a2bd; --accent:#4da3b8; --warn:#d98a4a;
+    --danger:#c85a4a; --ok:#5aa36f;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);
+       min-height:100vh;padding:20px;line-height:1.5}
+  .wrap{max-width:960px;margin:0 auto}
+  header{text-align:center;padding:10px 0 22px}
+  header h1{font-size:1.5rem;letter-spacing:.3px}
+  header p{color:var(--muted);font-size:.9rem;margin-top:6px}
+
+  .gate{max-width:400px;margin:60px auto;background:var(--panel);
+        border:1px solid var(--line);border-radius:12px;padding:28px;text-align:center}
+  .gate input{width:100%;padding:12px;margin:14px 0;background:var(--panel2);
+        border:1px solid var(--line);border-radius:8px;color:var(--ink);
+        font-size:1.05rem;text-align:center;letter-spacing:2px}
+  .gate .err{color:var(--danger);font-size:.85rem;min-height:1.2em}
+
+  button{font-family:var(--font);cursor:pointer;border:none;border-radius:8px;
+         font-size:.95rem;padding:11px 18px;background:var(--accent);color:#08131a;
+         font-weight:700}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:600}
+  button:disabled{opacity:.45;cursor:not-allowed}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:18px;text-align:left}
+  .card h3{font-size:1.02rem;margin-bottom:4px}
+  .card .mode{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;
+        color:var(--accent);font-weight:700;margin-bottom:8px}
+  .card .ph{color:var(--muted);font-size:.85rem;margin-bottom:14px}
+  .card .marked{color:var(--muted);font-size:.78rem;margin-bottom:14px;
+        border-left:2px solid var(--line);padding-left:9px}
+
+  .runner{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:26px;text-align:center}
+  .phase-name{font-size:1.05rem;color:var(--accent);font-weight:700;
+        text-transform:uppercase;letter-spacing:1.5px}
+  .clock{font-size:5.2rem;font-weight:200;font-variant-numeric:tabular-nums;
+        margin:8px 0;letter-spacing:2px}
+  .clock.warn{color:var(--warn)} .clock.danger{color:var(--danger)}
+  .sub{color:var(--muted);font-size:.9rem;margin-bottom:6px}
+  .bar{height:7px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:18px 0 6px}
+  .bar > i{display:block;height:100%;background:var(--accent);width:0;
+        transition:width .4s linear}
+  .steps{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:16px 0 4px}
+  .step{font-size:.76rem;padding:5px 11px;border-radius:20px;background:var(--panel2);
+        color:var(--muted);border:1px solid transparent}
+  .step.active{background:var(--accent);color:#08131a;font-weight:700}
+  .step.done{border-color:var(--ok);color:var(--ok)}
+  .controls{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+
+  .crit{margin-top:26px;text-align:left}
+  .crit h4{font-size:.8rem;text-transform:uppercase;letter-spacing:1.2px;
+        color:var(--muted);margin:18px 0 9px}
+  .crit .row{display:flex;align-items:center;gap:10px;padding:9px 12px;
+        background:var(--panel2);border-radius:8px;margin-bottom:7px;font-size:.87rem}
+  .crit .row span{flex:1}
+  .crit select{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+        border-radius:6px;padding:5px 7px;font-family:var(--font);font-size:.85rem}
+  .tot{margin-top:14px;padding:13px;background:var(--panel2);border-radius:8px;
+        text-align:center;font-size:.92rem}
+  .tot b{font-size:1.25rem;color:var(--accent)}
+  .note{color:var(--muted);font-size:.78rem;margin-top:10px;line-height:1.55}
+  footer{text-align:center;color:var(--muted);font-size:.76rem;margin-top:34px;
+        padding-top:16px;border-top:1px solid var(--line)}
+  .hidden{display:none}
+  @media(max-width:560px){.clock{font-size:3.6rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" class="gate">
+    <h1 style="font-size:1.2rem">SQE2 Station Timer</h1>
+    <p style="color:var(--muted);font-size:.86rem;margin-top:8px">
+      Enter the access code printed in your study guide.</p>
+    <input id="code" placeholder="ACCESS CODE" autocomplete="off">
+    <div class="err" id="err"></div>
+    <button onclick="unlock()" style="width:100%">Unlock</button>
+  </div>
+
+  <div id="app" class="hidden">
+    <header>
+      <h1>SQE2 Station Timer</h1>
+      <p>Runs the real clocks for all six SQE2 legal skills assessments</p>
+    </header>
+
+    <div id="picker">
+      <div class="grid" id="cards"></div>
+      <p class="note" style="text-align:center;margin-top:22px">
+        These are the timings in the SRA's specification applying to assessments
+        from 1 September 2026. The attendance note is handwritten in the real
+        assessment, so write yours by hand too.
+      </p>
+    </div>
+
+    <div id="runner" class="hidden">
+      <div class="runner">
+        <div class="phase-name" id="phName">Ready</div>
+        <div class="clock" id="clock">00:00</div>
+        <div class="sub" id="phSub"></div>
+        <div class="bar"><i id="bar"></i></div>
+        <div class="steps" id="steps"></div>
+        <div class="controls">
+          <button id="btnMain" onclick="toggle()">Start</button>
+          <button class="ghost" onclick="skipPhase()">Skip phase</button>
+          <button class="ghost" onclick="resetRun()">Reset</button>
+          <button class="ghost" onclick="backToPicker()">Choose another</button>
+        </div>
+      </div>
+
+      <div class="crit" id="crit"></div>
+      <p class="note">
+        Grade each criterion the way a real assessor does, as one global
+        judgment: A superior, B clearly satisfactory, C marginal pass,
+        D marginal fail, E clearly unsatisfactory, F poor. A scores 5 marks
+        down to F scoring 0.
+        <br><br>
+        Skills and application of law are weighted equally across SQE2 as a
+        whole. There is one overall pass mark for SQE2, and it is scaled at
+        each sitting, so no fixed percentage exists. The total below is a
+        self-review aid, not an SRA score.
+      </p>
+    </div>
+
+    <footer>
+      Uprising Test Prep. Independent study aid. Not produced, endorsed or
+      approved by the Solicitors Regulation Authority or Kaplan SQE.
+    </footer>
+  </div>
+</div>
+
+<script>
+const ACCESS_CODE = "SQE29000";
+
+const CRIT = {
+  interview:{skills:[
+    "Listen to the client and use questioning effectively to enable the client to tell the solicitor what is important to them.",
+    "Communicate and explain in a way that is suitable for the client to understand.",
+    "Conduct themselves in a professional manner and treat the client with courtesy, respect and politeness including respecting diversity where relevant.",
+    "Demonstrate client focus in their approach to the client and the issues.",
+    "Establish and maintain an effective relationship with the client so as to build trust and confidence."],law:[]},
+  attendance_note:{skills:[
+    "Record all relevant information.",
+    "Identify appropriate next steps.",
+    "Provide client focused advice."],law:[
+    "Apply the law correctly to the client's situation.",
+    "Apply the law comprehensively to the client's situation.",
+    "Identify any ethical and professional conduct issues and exercise judgment to resolve them honestly and with integrity."]},
+  advocacy:{skills:[
+    "Use appropriate language and behaviour.",
+    "Adopt a clear and logical structure.",
+    "Present a persuasive argument.",
+    "Interact with and engage the court appropriately.",
+    "Include all key relevant facts."],law:[
+    "Apply the law correctly to the client's situation.",
+    "Apply the law comprehensively to the client's situation.",
+    "Identify any ethical and professional conduct issues and exercise judgment to resolve them honestly and with integrity."]},
+  cma:{skills:[
+    "Identify relevant facts.",
+    "Provide client focused advice.",
+    "Use clear, precise, concise and acceptable language."],law:[
+    "Apply the law correctly to the client's situation.",
+    "Apply the law comprehensively to the client's situation.",
+    "Identify any ethical and professional conduct issues and exercise judgment to resolve them honestly and with integrity."]},
+  research:{skills:[
+    "Identify and use relevant sources and information.",
+    "Provide advice which is client focused and addresses the client's problem.",
+    "Use clear, precise, concise and acceptable language."],law:[
+    "Apply the law correctly to the client's situation.",
+    "Apply the law comprehensively to the client's situation.",
+    "Identify any ethical and professional conduct issues and exercise judgment to resolve them honestly and with integrity."]},
+  writing:{skills:[
+    "Include relevant facts.",
+    "Use a logical structure.",
+    "Advice and content is client and recipient focused.",
+    "Use clear, precise, concise and acceptable language which is appropriate to the recipient."],law:[
+    "Apply the law correctly to the client's situation.",
+    "Apply the law comprehensively to the client's situation.",
+    "Identify any ethical and professional conduct issues and exercise judgment to resolve them honestly and with integrity."]},
+  drafting:{skills:[
+    "Use clear, precise, concise and acceptable language.",
+    "Structure the document appropriately and logically."],law:[
+    "Draft a document which is legally correct.",
+    "Draft a document which is legally comprehensive.",
+    "Identify any ethical and professional conduct issues and exercise judgment to resolve them honestly and with integrity."]}
+};
+
+const STATIONS = [
+  {key:"interview", name:"Client interview and attendance note", mode:"Oral",
+   marked:"The interview is marked on skills only by the assessor playing the client. The attendance note is marked by a solicitor on skills and application of law.",
+   areas:"Property Practice, or Wills and the Administration of Estates",
+   phases:[
+     {n:"Read the papers", s:600, sub:"Read the partner's email and any documents"},
+     {n:"Conduct the interview", s:1500, sub:"25 minutes with the client"},
+     {n:"Attendance note", s:1500, sub:"Write it BY HAND, as in the real assessment"}],
+   crit:["interview","attendance_note"]},
+  {key:"advocacy", name:"Advocacy", mode:"Oral",
+   marked:"Marked by a solicitor playing the judge, on both skills and application of law. Expect questions during your submission.",
+   areas:"Dispute Resolution, or Criminal Law and Practice",
+   phases:[
+     {n:"Preparation", s:2700, sub:"45 minutes with the case study and file"},
+     {n:"Submission", s:900, sub:"15 minutes before the judge"}],
+   crit:["advocacy"]},
+  {key:"cma", name:"Case and matter analysis", mode:"Written",
+   marked:"Marked by a solicitor on skills and application of law.",
+   areas:"Any of the five practice areas",
+   phases:[{n:"Write the report to the partner", s:3600, sub:"60 minutes, computer based"}],
+   crit:["cma"]},
+  {key:"research", name:"Legal research", mode:"Written",
+   marked:"Marked by a solicitor on skills and application of law. The only station where you are expected to cite specific authorities.",
+   areas:"Any of the five practice areas",
+   phases:[{n:"Research and write the note", s:3600, sub:"60 minutes. Some sources you are given are irrelevant"}],
+   crit:["research"]},
+  {key:"writing", name:"Legal writing", mode:"Written",
+   marked:"Marked by a solicitor on skills and application of law. Two of the four skills criteria concern the recipient.",
+   areas:"Any of the five practice areas",
+   phases:[{n:"Write the letter or email", s:1800, sub:"30 minutes, the shortest station in SQE2"}],
+   crit:["writing"]},
+  {key:"drafting", name:"Legal drafting", mode:"Written",
+   marked:"Marked by a solicitor on skills and application of law. There is no client focused advice criterion, so the document alone carries the marks.",
+   areas:"Any of the five practice areas",
+   phases:[{n:"Draft the document", s:2700, sub:"45 minutes, computer based"}],
+   crit:["drafting"]}
+];
+
+const LABEL = {interview:"Interview (skills only)", attendance_note:"Attendance note",
+  advocacy:"Advocacy", cma:"Case and matter analysis", research:"Legal research",
+  writing:"Legal writing", drafting:"Legal drafting"};
+
+let cur=null, phase=0, left=0, tick=null, running=false;
+
+function unlock(){
+  const v=document.getElementById("code").value.trim().toUpperCase();
+  if(v===ACCESS_CODE){
+    document.getElementById("gate").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    try{localStorage.setItem("sqe2_unlocked","1")}catch(e){}
+    renderCards();
+  } else {
+    document.getElementById("err").textContent="That code is not correct.";
+  }
+}
+document.getElementById("code").addEventListener("keydown",e=>{if(e.key==="Enter")unlock()});
+try{ if(localStorage.getItem("sqe2_unlocked")==="1"){
+  document.getElementById("gate").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+} }catch(e){}
+
+function fmt(s){const m=Math.floor(s/60),r=s%60;
+  return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0")}
+
+function renderCards(){
+  document.getElementById("cards").innerHTML = STATIONS.map((st,i)=>`
+    <div class="card">
+      <div class="mode">${st.mode}</div>
+      <h3>${st.name}</h3>
+      <div class="ph">${st.phases.map(p=>p.n+" "+(p.s/60)+" min").join("  •  ")}</div>
+      <div class="marked">${st.marked}</div>
+      <div class="ph" style="font-size:.79rem">Sat in: ${st.areas}</div>
+      <button onclick="pick(${i})" style="width:100%;margin-top:4px">Start this station</button>
+    </div>`).join("");
+}
+renderCards();
+
+function pick(i){
+  cur=STATIONS[i]; phase=0; running=false;
+  left=cur.phases[0].s;
+  document.getElementById("picker").classList.add("hidden");
+  document.getElementById("runner").classList.remove("hidden");
+  renderCrit(); paint();
+}
+function backToPicker(){
+  stop(); cur=null;
+  document.getElementById("runner").classList.add("hidden");
+  document.getElementById("picker").classList.remove("hidden");
+}
+function paint(){
+  const p=cur.phases[phase];
+  document.getElementById("phName").textContent=p.n;
+  document.getElementById("phSub").textContent=p.sub;
+  const c=document.getElementById("clock");
+  c.textContent=fmt(left);
+  c.className="clock"+(left<=60?" danger":left<=300?" warn":"");
+  document.getElementById("bar").style.width=(100*(p.s-left)/p.s)+"%";
+  document.getElementById("steps").innerHTML=cur.phases.map((q,i)=>
+    `<div class="step ${i===phase?"active":i<phase?"done":""}">${q.n} ${q.s/60}m</div>`).join("");
+  document.getElementById("btnMain").textContent=running?"Pause":(left<cur.phases[phase].s?"Resume":"Start");
+}
+function toggle(){ running?stop():start() }
+function start(){
+  running=true; paint();
+  tick=setInterval(()=>{
+    left--;
+    if(left<=0){ nextPhase(); return }
+    paint();
+  },1000);
+}
+function stop(){ running=false; if(tick){clearInterval(tick);tick=null} paint&&cur&&paint() }
+function nextPhase(){
+  clearInterval(tick); tick=null; running=false;
+  beep();
+  if(phase < cur.phases.length-1){
+    phase++; left=cur.phases[phase].s; paint();
+    setTimeout(()=>{ alert("Time is up for that phase.\n\nNext: "+cur.phases[phase].n+
+      " ("+(cur.phases[phase].s/60)+" minutes)."); },60);
+  } else {
+    left=0; paint();
+    setTimeout(()=>{ alert("Station complete. Now grade yourself against the criteria below."); },60);
+  }
+}
+function skipPhase(){ left=1; if(!running){ nextPhase() } }
+function resetRun(){ stop(); phase=0; left=cur.phases[0].s; paint() }
+
+function beep(){
+  try{
+    const a=new (window.AudioContext||window.webkitAudioContext)();
+    const o=a.createOscillator(), g=a.createGain();
+    o.connect(g); g.connect(a.destination);
+    o.frequency.value=660; g.gain.value=.12;
+    o.start(); setTimeout(()=>{o.stop();a.close()},420);
+  }catch(e){}
+}
+
+function renderCrit(){
+  let h="";
+  cur.crit.forEach(k=>{
+    const c=CRIT[k];
+    h+=`<h4>${LABEL[k]}: skills</h4>`;
+    c.skills.forEach((t,i)=>h+=row(k+"_s"+i,t));
+    if(c.law.length){
+      h+=`<h4>${LABEL[k]}: application of law</h4>`;
+      c.law.forEach((t,i)=>h+=row(k+"_l"+i,t));
+    } else {
+      h+=`<p class="note">This station is marked on skills only. The assessor plays the client and does not mark application of law here.</p>`;
+    }
+  });
+  h+=`<div class="tot">Self review total <b id="tot">0</b> of <span id="max">0</span> marks</div>`;
+  document.getElementById("crit").innerHTML=h;
+  document.querySelectorAll("#crit select").forEach(s=>s.addEventListener("change",total));
+  total();
+}
+function row(id,t){
+  return `<div class="row"><span>${t}</span>
+    <select id="${id}">
+      <option value="">-</option>
+      <option value="5">A 5</option><option value="4">B 4</option>
+      <option value="3">C 3</option><option value="2">D 2</option>
+      <option value="1">E 1</option><option value="0">F 0</option>
+    </select></div>`;
+}
+function total(){
+  let t=0,m=0;
+  document.querySelectorAll("#crit select").forEach(s=>{
+    m+=5; if(s.value!=="") t+=parseInt(s.value,10);
+  });
+  const tt=document.getElementById("tot"), mm=document.getElementById("max");
+  if(tt) tt.textContent=t; if(mm) mm.textContent=m;
+}
+</script>
+</body>
+</html>
